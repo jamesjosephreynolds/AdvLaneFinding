@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 def do(suppress = True):
-    print('Calibrating camera')
+    if suppress is False:
+        print('Calibrating camera')
     
     # load calibration images
     fname_array = ['camera_cal/calibration1.jpg',
@@ -172,8 +173,8 @@ if __name__ == '__main__':
     # in addition to returning calibration matrix and distortion coeffs
     print('Running locally, printing and saving allowed')
     do(suppress = False)
-    
+
 else:
-    # Just returning calibration matrix and distortion coefficients
-    print('Running externally, printing and saving suppressed')
+    # Suppress all command line debug statements and file saves
+    pass
 
