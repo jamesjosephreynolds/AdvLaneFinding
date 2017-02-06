@@ -10,12 +10,13 @@ import matplotlib.image as mpimg
 import calibrate_camera
 import undist_and_warp
 import color_and_gradient
+import find_lane_lines
 
 ## Calibrate the camera
 mtx, dist = calibrate_camera.do()
 
 ## Test image
-src = mpimg.imread('test_images/test1.jpg', format = 'jpg')
+src = mpimg.imread('test_images/straight_lines2.jpg', format = 'jpg')
 
 ## Apply color and gradient thresholds
 sobel_thresh = [20, 100]
@@ -33,9 +34,12 @@ poly = np.float32([[x1,horz],[0,rows],[cols,rows],[x2,horz]])
 dst = undist_and_warp.do(src, mtx, dist, poly)
 dst1 = undist_and_warp.do(src1, mtx, dist, poly)
 
+
 plt.subplot(221),plt.imshow(src),plt.title('Input')
 plt.subplot(222),plt.imshow(src1 ,cmap = 'gray'),plt.title('Thresh')
 plt.subplot(223),plt.imshow(dst),plt.title('WarpUndistort')
 plt.subplot(224),plt.imshow(dst1, cmap = 'gray'),plt.title('Composite')
 plt.show()
 
+## Find the lane lines
+find_lane_lines.do(dst1)
