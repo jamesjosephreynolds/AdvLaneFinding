@@ -19,3 +19,7 @@ Camera calibration is a straightforward application of lessons in this course.  
             ret, corners = cv2.findChessboardCorners(gray, (9,5), None)
             if ret is True:
 ```
+
+Even with this search, I was unable to get calibration points out of file 4.  By visual inspection, it's not clear why one of these combinations is not sufficient.
+
+I selected 4 images from the calibration to test the calibration data, by performing a `cv2.undistort` and comparing the before and after images side-by-side.  The first image pair is the easiest to judge by the naked eye, and say the image has been reasonably corrected.
