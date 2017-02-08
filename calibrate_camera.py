@@ -4,32 +4,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-def do(suppress = True):
+def do(fname_array, suppress = True):
+    '''fname_array is a list of strings specifying image filenames'''
+    
     if suppress is False:
         print('Calibrating camera')
     
     # load calibration images
-    fname_array = ['camera_cal/calibration1.jpg',
-                 'camera_cal/calibration2.jpg',
-                 'camera_cal/calibration3.jpg',
-                 'camera_cal/calibration4.jpg',
-                 'camera_cal/calibration5.jpg',
-                 'camera_cal/calibration6.jpg',
-                 'camera_cal/calibration7.jpg',
-                 'camera_cal/calibration8.jpg',
-                 'camera_cal/calibration9.jpg',
-                 'camera_cal/calibration10.jpg',
-                 'camera_cal/calibration11.jpg',
-                 'camera_cal/calibration12.jpg',
-                 'camera_cal/calibration13.jpg',
-                 'camera_cal/calibration14.jpg',
-                 'camera_cal/calibration15.jpg',
-                 'camera_cal/calibration16.jpg',
-                 'camera_cal/calibration17.jpg',
-                 'camera_cal/calibration18.jpg',
-                 'camera_cal/calibration19.jpg',
-                 'camera_cal/calibration20.jpg']
-
     img = mpimg.imread(fname_array[0], format = 'jpg')
     rows, cols = img.shape[0], img.shape[1]
     img_array = np.zeros((len(fname_array),rows,cols,3),dtype = np.uint8)
@@ -172,7 +153,30 @@ if __name__ == '__main__':
     # Printing debug info and saving files for README
     # in addition to returning calibration matrix and distortion coeffs
     print('Running locally, printing and saving allowed')
-    do(suppress = False)
+    fname_array = ['camera_cal/calibration1.jpg',
+                 'camera_cal/calibration2.jpg',
+                 'camera_cal/calibration3.jpg',
+                 'camera_cal/calibration4.jpg',
+                 'camera_cal/calibration5.jpg',
+                 'camera_cal/calibration6.jpg',
+                 'camera_cal/calibration7.jpg',
+                 'camera_cal/calibration8.jpg',
+                 'camera_cal/calibration9.jpg',
+                 'camera_cal/calibration10.jpg',
+                 'camera_cal/calibration11.jpg',
+                 'camera_cal/calibration12.jpg',
+                 'camera_cal/calibration13.jpg',
+                 'camera_cal/calibration14.jpg',
+                 'camera_cal/calibration15.jpg',
+                 'camera_cal/calibration16.jpg',
+                 'camera_cal/calibration17.jpg',
+                 'camera_cal/calibration18.jpg',
+                 'camera_cal/calibration19.jpg',
+                 'camera_cal/calibration20.jpg']
+    
+    mtx, dist = do(fname_array, suppress = False)
+    print('Calibration matrix M = '+str(mtx))
+    print('Distortion coefficents = '+str(dist))
 
 else:
     # Suppress all command line debug statements and file saves
