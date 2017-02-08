@@ -4,6 +4,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import calibrate_camera
+import lane_find_files
+
+def params():
+    sobel_thresh = [20, 100]
+    s_thresh = [170, 255]
+    
+    return sobel_thresh, s_thresh
 
 def do(src, sobel_thresh, s_thresh, suppress = True):
     if suppress is False:
@@ -42,16 +49,8 @@ def HlsGrad(src, s_thresh):
 if __name__ == '__main__':
     # Run the color and sobel threshold function on test images
     print('Running locally on test images, printing and saving allowed')
-    sobel_thresh = [20, 100]
-    s_thresh = [170, 255]
-    fname_array = ['test_images/straight_lines1.jpg',
-                 'test_images/straight_lines2.jpg',
-                 'test_images/test1.jpg',
-                 'test_images/test2.jpg',
-                 'test_images/test3.jpg',
-                 'test_images/test4.jpg',
-                 'test_images/test5.jpg',
-                 'test_images/test6.jpg']
+    fname_array = lane_find_files.test_images()
+    sobel_thresh, s_thresh = params()
     for fidx in range(len(fname_array)):
         src = mpimg.imread(fname_array[fidx], format = 'jpg')
 

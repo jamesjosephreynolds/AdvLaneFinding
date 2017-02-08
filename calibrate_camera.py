@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import lane_find_files
 
 def do(fname_array, suppress = True):
     '''fname_array is a list of strings specifying image filenames'''
@@ -153,28 +154,12 @@ if __name__ == '__main__':
     # Printing debug info and saving files for README
     # in addition to returning calibration matrix and distortion coeffs
     print('Running locally, printing and saving allowed')
-    fname_array = ['camera_cal/calibration1.jpg',
-                 'camera_cal/calibration2.jpg',
-                 'camera_cal/calibration3.jpg',
-                 'camera_cal/calibration4.jpg',
-                 'camera_cal/calibration5.jpg',
-                 'camera_cal/calibration6.jpg',
-                 'camera_cal/calibration7.jpg',
-                 'camera_cal/calibration8.jpg',
-                 'camera_cal/calibration9.jpg',
-                 'camera_cal/calibration10.jpg',
-                 'camera_cal/calibration11.jpg',
-                 'camera_cal/calibration12.jpg',
-                 'camera_cal/calibration13.jpg',
-                 'camera_cal/calibration14.jpg',
-                 'camera_cal/calibration15.jpg',
-                 'camera_cal/calibration16.jpg',
-                 'camera_cal/calibration17.jpg',
-                 'camera_cal/calibration18.jpg',
-                 'camera_cal/calibration19.jpg',
-                 'camera_cal/calibration20.jpg']
-    
+
+    # Run calibration function
+    fname_array = lane_find_files.cal_images()
     mtx, dist = do(fname_array, suppress = False)
+
+    # Print info
     print('Calibration matrix M = '+str(mtx))
     print('Distortion coefficents = '+str(dist))
 
