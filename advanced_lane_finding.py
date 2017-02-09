@@ -175,7 +175,7 @@ def warp(src):
 
     return dst
 
-def unwarp(src, Minv):
+def unwarp(src):
     
     rows, cols = src.shape[0], src.shape[1]
     dst = cv2.warpPerspective(src, unwarp.Minv, (cols, rows))
@@ -224,7 +224,7 @@ def SobelX(src):
     abs_sobelx = np.absolute(sobelx)
     scaled_sobel = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
     sobel_binary = np.zeros_like(scaled_sobel)
-    sobel_binary[(scaled_sobel > SobelX.thresh[0]) & (scaled_sobel <= Sobelx.thresh[1])] = 1
+    sobel_binary[(scaled_sobel > SobelX.thresh[0]) & (scaled_sobel <= SobelX.thresh[1])] = 1
 
     return sobel_binary
 
@@ -344,11 +344,10 @@ polygon1, polygon2 = warp_and_unwarp_params()
 print(polygon1), print(polygon2)
 warp.M = cv2.getPerspectiveTransform(polygon1, polygon2)
 unwarp.Minv = cv2.getPerspectiveTransform(polygon2, polygon1)
-print(find_lanes.M), print(find_lanes.Minv)
+print(warp.M), print(unwarp.Minv)
 find_lines.num, find_lines.width, find_lines.min = 8, 200, 50
 SobelX.thresh, HlsGrad.s_thresh = [20, 100], [170, 255]
 
-'''
 ## Set test images
 fname_array = test_images()
 
@@ -362,7 +361,7 @@ for fidx in range(len(fname_array)):
         plt.subplot(2,1,1),plt.imshow(undist),plt.title('Undistorted')
         plt.subplot(2,1,2),plt.imshow(painted),plt.title('Output')
         filestr = 'output_images/input_output'+str(fidx)+'.png'
-        plt.savefig(filestr, format='png')'''
+        plt.savefig(filestr, format='png')
 
 
 ## Test videos
