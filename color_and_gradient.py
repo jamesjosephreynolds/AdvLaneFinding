@@ -26,7 +26,7 @@ def do(src, sobel_thresh, s_thresh, suppress = True):
     dst = np.zeros_like(color_binary)
     dst[(sobel_binary == 1) | (color_binary == 1)] = 1
 
-    return dst, stack
+    return dst
 
 def SobelX(src, sobel_thresh):
     gray = cv2.cvtColor(src, cv2.COLOR_RGB2GRAY)
@@ -54,10 +54,10 @@ if __name__ == '__main__':
     for fidx in range(len(fname_array)):
         src = mpimg.imread(fname_array[fidx], format = 'jpg')
 
-        dst, stack = do(src, sobel_thresh, s_thresh, suppress = False)
+        dst = do(src, sobel_thresh, s_thresh, suppress = False)
 
         plt.subplot(131),plt.imshow(src),plt.title('Input')
-        plt.subplot(132),plt.imshow(stack),plt.title('Stacked')
+ #       plt.subplot(132),plt.imshow(stack),plt.title('Stacked')
         plt.subplot(133),plt.imshow(dst,cmap = 'gray'),plt.title('Composite')
         filestr = 'output_images/color_and_gradient'+str(fidx)+'.png'
         plt.savefig(filestr,format='png')
