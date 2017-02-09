@@ -301,10 +301,10 @@ def find_lines(src):
         # Update search reach region for the next rectangle
         # if many pixels suggest to do so
         if len(left_indices) >= find_lines.min:
-            left_center = np.uint32(np.mean(nonzero_col[left_indices]))
+            left_center = np.argmax([np.uint32(np.mean(nonzero_col[left_indices])),np.uint32(find_lines.width/2)])
 
         if len(right_indices) >= find_lines.min:
-            right_center = np.uint32(np.mean(nonzero_col[right_indices]))
+            right_center = np.argmin([np.uint32(np.mean(nonzero_col[right_indices])),(np.uint32(cols)-np.uint32(find_lines.width/2))])
 
         left_indices_all.append(left_indices)
         right_indices_all.append(right_indices)
