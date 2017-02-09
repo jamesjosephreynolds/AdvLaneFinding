@@ -7,8 +7,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-import calibrate_camera
-import lane_find_files
 from moviepy.editor import VideoFileClip
 
 def cal_images():
@@ -152,6 +150,8 @@ def calibrate_camera(fname_array):
     return mtx, dist
 
 def paint_lane(src, left_polynomial, right_polynomial):
+    # Given an image and a polynomial best fit for each edge
+    # superimpose the lane over the image
 
     dst = np.zeros_like(src).astype(np.uint8)
     ploty = np.linspace(0, 719, num=720)
@@ -169,6 +169,8 @@ def paint_lane(src, left_polynomial, right_polynomial):
     return dst
 
 def warp(src):
+    # given an undistorted image, create a bird's eye transformation
+    # of the area in front of the car
 
     rows, cols = src.shape[0], src.shape[1]
     dst = cv2.warpPerspective(src, warp.M, (cols, rows))
@@ -176,6 +178,8 @@ def warp(src):
     return dst
 
 def unwarp(src):
+    # given a bird's eye view of the area in front of the car,
+    # create a perspective transformation (natural view)
     
     rows, cols = src.shape[0], src.shape[1]
     dst = cv2.warpPerspective(src, unwarp.Minv, (cols, rows))
@@ -183,7 +187,8 @@ def unwarp(src):
     return dst
 
 def warp_and_unwarp_params():
-    # image info
+    # Constant parameters for warp and unwarp
+
     cols = np.float32(1280)
     rows = np.float32(720)
     horz = np.float32(450) # horizon y-coordinate
@@ -205,6 +210,8 @@ def warp_and_unwarp_params():
     return poly1, poly2
 
 def threshold(src):
+    # Apply both Sobel (X) and HSL (S) thresholds
+    # on an image, take union of the two results
 
     # Sobel value
     sobel_binary = SobelX(src)
@@ -219,6 +226,9 @@ def threshold(src):
     return dst
 
 def SobelX(src):
+    # Apply a Sobel gradient to an image
+    # keep only the pixels that lie within the thresholds
+    
     gray = cv2.cvtColor(src, cv2.COLOR_RGB2GRAY)
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
     abs_sobelx = np.absolute(sobelx)
@@ -229,6 +239,9 @@ def SobelX(src):
     return sobel_binary
 
 def HlsGrad(src):
+    # Apply an HSL color transformation on an image
+    # keep only the pixels that lie within the thresholds in the S plane
+    
     hls = cv2.cvtColor(src, cv2.COLOR_RGB2HLS)
     s = hls[:,:,2]
     color_binary = np.zeros_like(s)
@@ -285,6 +298,8 @@ def find_lines(src):
         right_indices = ((nonzero_row >= top) & (nonzero_row < bottom)
                           & (nonzero_col >= right_left) & (nonzero_col < right_right)).nonzero()[0]
 
+        # Update search reach region for the next rectangle
+        # if many pixels suggest to do so
         if len(left_indices) >= find_lines.min:
             left_center = np.uint32(np.mean(nonzero_col[left_indices]))
 
@@ -306,58 +321,62 @@ def find_lines(src):
     return dst, left_poly, right_poly
 
 def find_lanes(image):
-    # Take in an image and undistort
+    # Main function
 
-    # Calibrate the camera (ideally outside of loop)
+    # Undistort the image
     undist = cv2.undistort(image, find_lanes.mtx, find_lanes.dist)
 
     # Apply Sobel gradient threshold and HSL S-threshold
-
     image = threshold(undist)
 
-    ## Warp the perspective for straight line region
-
+    # Warp the perspective to bird's eye
     image = warp(image)
 
-    ## Find the lane lines (utilizing previous location if possible)
-
+    # Find the lane lines (Note: need to implement previous result improvement and filtering!)
     lanes, left_polynomial, right_polynomial = find_lines(image)
 
-    # Paint the lane lines onto the undistorted image
+    # Paint the lane lines onto the blank bird's eye image
     shadow = paint_lane(lanes, left_polynomial, right_polynomial)
 
-    # Warp the blank back to original image space using inverse perspective matrix (Minv)
+    # Warp the bird's eye lane to original image perspective using inverse perspective matrix (Minv)
     unwarped = unwarp(shadow)
 
-    # Combine the result with the original image
+    # Overlay the lane estimate onto the original image
     dst = cv2.addWeighted(undist, 1, unwarped, 0.3, 0)
 
     return dst
 
-## Calibrate the camera
+## Calibrate the camera ##
 fname_array = cal_images()
 mtx, dist = calibrate_camera(fname_array)
 print(mtx), print(dist)
 find_lanes.mtx = mtx
 find_lanes.dist = dist
+
+## Load parameters ##
 polygon1, polygon2 = warp_and_unwarp_params()
 print(polygon1), print(polygon2)
+# perspective transform matrices
 warp.M = cv2.getPerspectiveTransform(polygon1, polygon2)
 unwarp.Minv = cv2.getPerspectiveTransform(polygon2, polygon1)
 print(warp.M), print(unwarp.Minv)
+# lane finder params: number of slices, width of search region, number of pixels
 find_lines.num, find_lines.width, find_lines.min = 8, 200, 50
+# Sobel and HLS thresholds
 SobelX.thresh, HlsGrad.s_thresh = [20, 100], [170, 255]
 
-## Set test images
+## Choose test images
 fname_array = test_images()
 
 for fidx in range(len(fname_array)):
+        # Load image
         src = mpimg.imread(fname_array[fidx], format = 'jpg')
 
-        # paint lane lines
+        # Two images (undistorted original, and undistorted painted)
         undist = cv2.undistort(src, mtx, dist)
         painted = find_lanes(src)
 
+        # Compare undistorted image to fully processed (with lane) image
         plt.subplot(2,1,1),plt.imshow(undist),plt.title('Undistorted')
         plt.subplot(2,1,2),plt.imshow(painted),plt.title('Output')
         filestr = 'output_images/input_output'+str(fidx)+'.png'
