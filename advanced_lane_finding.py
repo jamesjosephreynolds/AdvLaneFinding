@@ -243,13 +243,14 @@ def threshold(src):
     sobel_binary = SobelX(src)
 
     # S value
-    color_binary = HlsGrad(src)
-            
-    stack= np.dstack((np.zeros_like(color_binary), 255*sobel_binary, 255*color_binary))
-    dst = np.zeros_like(color_binary)
-    dst[(sobel_binary == 1) | (color_binary == 1)] = 1
+    s_binary = HlsGrad(src)
 
-    return stack#dst
+    # yellow and white values
+    color_binary = ColorFilt(src)
+            
+    stack= np.dstack((255*color_binary, 255*sobel_binary, 255*s_binary))
+
+    return stack
 
 def SobelX(src):
     # Apply a Sobel gradient to an image
@@ -272,6 +273,19 @@ def HlsGrad(src):
     s = hls[:,:,2]
     color_binary = np.zeros_like(s)
     color_binary[(s > HlsGrad.s_thresh[0]) & (s <= HlsGrad.s_thresh[1])] = 1
+
+    return color_binary
+
+def ColorFilt(src):
+    # Keep only the pixels that lie within the thresholds near yellow and white
+    
+    color_binary = np.zeros_like(src[:,:,2])
+    color_binary[(((src[:,:,0] > ColorFilt.yellow[0][0]) & (src[:,:,0] < ColorFilt.yellow[0][1]))
+                 &((src[:,:,1] > ColorFilt.yellow[1][0]) & (src[:,:,1] < ColorFilt.yellow[1][1]))
+                 &((src[:,:,2] > ColorFilt.yellow[2][0]) & (src[:,:,2] < ColorFilt.yellow[2][1])))
+                 |(((src[:,:,0] > ColorFilt.white[0][0]) & (src[:,:,0] < ColorFilt.white[0][1]))
+                 &((src[:,:,1] > ColorFilt.white[1][0]) & (src[:,:,1] < ColorFilt.white[1][1]))
+                 &((src[:,:,2] > ColorFilt.white[2][0]) & (src[:,:,2] < ColorFilt.white[2][1])))] = 1
 
     return color_binary
 
@@ -299,15 +313,20 @@ def find_lines(src):
     right_indices_all = []
     if LeftLine.center == []:
         left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
-        LeftLine.center = np.uint32(left_center)
     else:
-        #print('LeftLine.center is '+str(LeftLine.center))
         window_left = LeftLine.center-np.uint32(find_lines.width/2)
         window_right = LeftLine.center+np.uint32(find_lines.width/2)
         left_center = window_left+np.argmax(hist[window_left:window_right])
-        LeftLine.center = np.uint32(left_center)
-        #print('LeftLine.center is '+str(LeftLine.center))
-    right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
+    LeftLine.center = np.uint32(left_center)
+
+    if RightLine.center == []:
+        right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
+    else:
+        window_left = RightLine.center-np.uint32(find_lines.width/2)
+        window_right = RightLine.center+np.uint32(find_lines.width/2)
+        right_center = window_left+np.argmax(hist[window_left:window_right])
+    RightLine.center = np.uint32(right_center)
+    
     
     dst = np.dstack((src, src, src))*255
 
@@ -408,7 +427,7 @@ def find_lanes(image):
 ## Choose return type:
 # True = 4 image composite
 # False = Output only
-find_lanes.composite = False
+find_lanes.composite = True
 
 ## Calibrate the camera ##
 fname_array = cal_images()
@@ -428,7 +447,9 @@ unwarp.Minv = cv2.getPerspectiveTransform(polygon2, polygon1)
 # lane finder params: number of slices, width of search region, number of pixels
 find_lines.num, find_lines.width, find_lines.min = 8, 160, 50
 # Sobel and HLS thresholds
-SobelX.thresh, HlsGrad.s_thresh = [50, 80], [175, 255]
+SobelX.thresh, HlsGrad.s_thresh = [30, 80], [155, 255]
+# Yellow and white thresholds
+ColorFilt.yellow, ColorFilt.white = [[215, 255], [160, 255], [0, 160]],[[225, 255], [225, 255], [225, 255]]
 
 ## Choose test images
 fname_array = test_images()
