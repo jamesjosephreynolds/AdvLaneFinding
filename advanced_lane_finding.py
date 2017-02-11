@@ -8,6 +8,32 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from moviepy.editor import VideoFileClip
+import time
+
+class Line():
+    def __init__(self):
+        # was the line detected in the last iteration?
+        self.detected = False  
+        # x values of the last n fits of the line
+        self.recent_xfitted = [] 
+        #average x values of the fitted line over the last n iterations
+        self.bestx = None     
+        #polynomial coefficients averaged over the last n iterations
+        self.best_fit = None  
+        #polynomial coefficients for the most recent fit
+        self.current_fit = [np.array([False])]  
+        #radius of curvature of the line in some units
+        self.radius_of_curvature = None 
+        #distance in meters of vehicle center from the line
+        self.line_base_pos = None 
+        #difference in fit coefficients between last and new fits
+        self.diffs = np.array([0,0,0], dtype='float') 
+        #x values for detected line pixels
+        self.allx = None  
+        #y values for detected line pixels
+        self.ally = None
+        #x location of the first window center form the previous run
+        self.center = []
 
 def cal_images():
     # Images for camera calibration
@@ -223,7 +249,7 @@ def threshold(src):
     dst = np.zeros_like(color_binary)
     dst[(sobel_binary == 1) | (color_binary == 1)] = 1
 
-    return dst
+    return stack#dst
 
 def SobelX(src):
     # Apply a Sobel gradient to an image
@@ -253,6 +279,8 @@ def find_lines(src):
     # Divide the images in N horizontal slices and find the lane
     # lines in each slice
 
+    src = cv2.cvtColor(src, cv2.COLOR_RGB2GRAY)
+
     rows, cols = src.shape[0], src.shape[1]
 
     # Basic geometry of the figure, slice up into sections
@@ -269,8 +297,18 @@ def find_lines(src):
 
     left_indices_all = []
     right_indices_all = []
-    left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
+    if LeftLine.center == []:
+        left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
+        LeftLine.center = np.uint32(left_center)
+    else:
+        print('LeftLine.center is '+str(LeftLine.center))
+        window_left = LeftLine.center-np.uint32(find_lines.width/2)
+        window_right = LeftLine.center+np.uint32(find_lines.width/2)
+        left_center = window_left+np.argmax(hist[window_left:window_right])
+        LeftLine.center = np.uint32(left_center)
+        print('LeftLine.center is '+str(LeftLine.center))
     right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
+    
     dst = np.dstack((src, src, src))*255
 
     for idx in range(find_lines.num):
@@ -281,12 +319,19 @@ def find_lines(src):
         bottom = rows - np.uint32((idx)*slice_height)
 
         # left and right border of left rectangle
-        left_left = left_center-np.uint32(find_lines.width/2)
+        if left_center <= (find_lines.width/2):
+            left_left = 0
+        else:
+            left_left = left_center-np.uint32(find_lines.width/2)
+            
         left_right = left_center+np.uint32(find_lines.width/2)
 
         # left and right border of right rectangle
         right_left = right_center-np.uint32(find_lines.width/2)
-        right_right = right_center+np.uint32(find_lines.width/2)
+        if right_center >= cols-np.uint32(find_lines.width/2):
+            right_right = cols
+        else:
+            right_right = right_center+np.uint32(find_lines.width/2)
 
         # draw rectangles
         cv2.rectangle(dst, (left_left,bottom),(left_right,top),(255,165,0), 2) # orange
@@ -301,11 +346,10 @@ def find_lines(src):
         # Update search reach region for the next rectangle
         # if many pixels suggest to do so
         if len(left_indices) >= find_lines.min:
-            left_center = np.argmax([np.uint32(np.mean(nonzero_col[left_indices])),np.uint32(find_lines.width/2)])
+            left_center = np.uint32(np.mean(nonzero_col[left_indices]))
 
         if len(right_indices) >= find_lines.min:
-            right_center = np.argmin([np.uint32(np.mean(nonzero_col[right_indices])),(np.uint32(cols)-np.uint32(find_lines.width/2))])
-
+            right_center = np.uint32(np.mean(nonzero_col[right_indices]))
         left_indices_all.append(left_indices)
         right_indices_all.append(right_indices)
 
@@ -320,17 +364,28 @@ def find_lines(src):
 
     return dst, left_poly, right_poly
 
+def composite_image(img1, img2, img3, img4):
+    # show 4 images on the same plot for tuning analysis
+    dst = np.zeros_like(img1, dtype = np.uint8)
+    dst[0:360,0:640] = cv2.resize(img1, (640,360))
+    dst[0:360,640:1281] = cv2.resize(img2, (640,360))
+    dst[360:721,0:640] = cv2.resize(img3, (640,360))
+    dst[360:721,640:1281] = cv2.resize(img4, (640,360))
+
+    return dst
+
 def find_lanes(image):
     # Main function
+    t0 = time.time()
 
     # Undistort the image
     undist = cv2.undistort(image, find_lanes.mtx, find_lanes.dist)
 
     # Apply Sobel gradient threshold and HSL S-threshold
-    image = threshold(undist)
+    stack = threshold(undist)
 
     # Warp the perspective to bird's eye
-    image = warp(image)
+    image = warp(stack)
 
     # Find the lane lines (Note: need to implement previous result improvement and filtering!)
     lanes, left_polynomial, right_polynomial = find_lines(image)
@@ -344,30 +399,40 @@ def find_lanes(image):
     # Overlay the lane estimate onto the original image
     dst = cv2.addWeighted(undist, 1, unwarped, 0.3, 0)
 
+    if find_lanes.composite is True:
+        # combine images
+        dst = composite_image(undist, stack, lanes, dst)
+
     return dst
+
+## Choose return type:
+# True = 4 image composite
+# False = Output only
+find_lanes.composite = False
 
 ## Calibrate the camera ##
 fname_array = cal_images()
 mtx, dist = calibrate_camera(fname_array)
-print(mtx), print(dist)
 find_lanes.mtx = mtx
 find_lanes.dist = dist
 
+## Create global variables
+LeftLine = Line()
+RightLine = Line()
+
 ## Load parameters ##
 polygon1, polygon2 = warp_and_unwarp_params()
-print(polygon1), print(polygon2)
 # perspective transform matrices
 warp.M = cv2.getPerspectiveTransform(polygon1, polygon2)
 unwarp.Minv = cv2.getPerspectiveTransform(polygon2, polygon1)
-print(warp.M), print(unwarp.Minv)
 # lane finder params: number of slices, width of search region, number of pixels
-find_lines.num, find_lines.width, find_lines.min = 8, 200, 50
+find_lines.num, find_lines.width, find_lines.min = 8, 160, 50
 # Sobel and HLS thresholds
-SobelX.thresh, HlsGrad.s_thresh = [20, 100], [170, 255]
+SobelX.thresh, HlsGrad.s_thresh = [50, 80], [175, 255]
 
 ## Choose test images
 fname_array = test_images()
-
+'''
 for fidx in range(len(fname_array)):
         # Load image
         src = mpimg.imread(fname_array[fidx], format = 'jpg')
@@ -380,10 +445,11 @@ for fidx in range(len(fname_array)):
         plt.subplot(2,1,1),plt.imshow(undist),plt.title('Undistorted')
         plt.subplot(2,1,2),plt.imshow(painted),plt.title('Output')
         filestr = 'output_images/input_output'+str(fidx)+'.png'
-        plt.savefig(filestr, format='png')
+        plt.savefig(filestr, format='png')'''
 
 
 ## Test videos
+find_lanes.composite = True
 print('Starting video 1')
 video_output = 'project_video_out.mp4'
 clip1 = VideoFileClip("project_video.mp4")
