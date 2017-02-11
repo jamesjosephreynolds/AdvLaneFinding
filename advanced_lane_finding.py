@@ -301,12 +301,12 @@ def find_lines(src):
         left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
         LeftLine.center = np.uint32(left_center)
     else:
-        print('LeftLine.center is '+str(LeftLine.center))
+        #print('LeftLine.center is '+str(LeftLine.center))
         window_left = LeftLine.center-np.uint32(find_lines.width/2)
         window_right = LeftLine.center+np.uint32(find_lines.width/2)
         left_center = window_left+np.argmax(hist[window_left:window_right])
         LeftLine.center = np.uint32(left_center)
-        print('LeftLine.center is '+str(LeftLine.center))
+        #print('LeftLine.center is '+str(LeftLine.center))
     right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
     
     dst = np.dstack((src, src, src))*255
@@ -455,7 +455,7 @@ video_output = 'project_video_out.mp4'
 clip1 = VideoFileClip("project_video.mp4")
 video_clip = clip1.fl_image(find_lanes)
 video_clip.write_videofile(video_output, audio=False)
-'''
+
 video_output = 'challenge_video_out.mp4'
 clip1 = VideoFileClip("challenge_video.mp4")
 video_clip = clip1.fl_image(find_lanes)
@@ -464,4 +464,4 @@ video_clip.write_videofile(video_output, audio=False)
 video_output = 'harder_challenge_video_out.mp4'
 clip1 = VideoFileClip("harder_challenge_video.mp4")
 video_clip = clip1.fl_image(find_lanes)
-video_clip.write_videofile(video_output, audio=False)'''
+video_clip.write_videofile(video_output, audio=False)
