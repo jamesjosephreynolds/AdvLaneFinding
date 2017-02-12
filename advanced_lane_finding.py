@@ -483,6 +483,22 @@ for fidx in range(len(fname_array)):
     filestr = 'output_images/undistorted_road'+str(fidx)+'.png'
     plt.savefig(filestr, format='png')
 
+## Show thresholded test images
+for fidx in range(len(fname_array)):
+    print('Saving thresholded road samples')
+    # Load image
+    src = mpimg.imread(fname_array[fidx], format = 'jpg')
+
+    # Two images (original, and undistorted)
+    undist = cv2.undistort(src, mtx, dist)
+    stacked = threshold(undist)
+
+    # Save images
+    plt.subplot(len(fname_array),2,(2*fidx+1)),plt.imshow(src),plt.title('Original')
+    plt.subplot(len(fname_array),2,(2*fidx+2)),plt.imshow(stacked),plt.title('Thresholded')
+filestr = 'output_images/thresholded_road.png'
+plt.savefig(filestr, format='png')
+
 for fidx in range(len(fname_array)):
         # Load image
         src = mpimg.imread(fname_array[fidx], format = 'jpg')
@@ -494,7 +510,7 @@ for fidx in range(len(fname_array)):
         # Compare undistorted image to fully processed (with lane) image
         plt.subplot(2,1,1),plt.imshow(undist),plt.title('Undistorted')
         plt.subplot(2,1,2),plt.imshow(painted),plt.title('Output')
-        filestr = 'output_images/input_output'+str(fidx)+'.png'
+        filestr = 'output_images/final'+str(fidx)+'.png'
         plt.savefig(filestr, format='png')
 
 ## Test videos
