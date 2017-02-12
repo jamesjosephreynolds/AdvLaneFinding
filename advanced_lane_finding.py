@@ -494,10 +494,10 @@ for fidx in range(len(fname_array)):
     stacked = threshold(undist)
 
     # Save images
-    plt.subplot(len(fname_array),2,(2*fidx+1)),plt.imshow(src),plt.title('Original')
-    plt.subplot(len(fname_array),2,(2*fidx+2)),plt.imshow(stacked),plt.title('Thresholded')
-filestr = 'output_images/thresholded_road.png'
-plt.savefig(filestr, format='png')
+    plt.subplot(2,1,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(2,1,2),plt.imshow(stacked),plt.title('Thresholded')
+    filestr = 'output_images/thresholded_road'+str(fidx)+'.png'
+    plt.savefig(filestr, format='png')
 
 for fidx in range(len(fname_array)):
         # Load image
