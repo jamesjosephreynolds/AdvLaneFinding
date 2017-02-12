@@ -22,6 +22,9 @@ Camera calibration is a straightforward application of lessons in this course.  
 
 Even with this search, I was unable to get calibration points out of file 4.  By visual inspection, it's not clear why one of these combinations is not sufficient.
 
-I selected 4 images from the calibration to test the calibration data, by performing a `cv2.undistort` and comparing the before and after images side-by-side.  The first image pair is the easiest to judge by the naked eye, and say the image has been reasonably corrected.
+There are two pairs of images demonstrating the camera calibration below.
 
-[undistorted_chessboard0.png](output_images/undistorted_chessboard0.png)
+![Whoops, there should be a picture here!](output_images/undistorted_chessboard0.png)
+![Whoops, there should be a picture here!](output_images/undistorted_road0.png)
+
+It is very clear in the chessboard image, above, that the slightly curved lines have been straightened.  It's not as apparent on the image of the road, but if one examines the left and right edges closely, the undistorted images shows less of the periphery, and the road sign on the right-hand side is a more natural shape.  There are additional images in this repository, saved as output_images/undistorted\*.png showing the rest of the undistort results.
