@@ -266,7 +266,7 @@ def SobelX(src):
     return sobel_binary
 
 def HlsGrad(src):
-    # Apply an HSL color transformation on an image
+    # Apply an HLS color transformation on an image
     # keep only the pixels that lie within the thresholds in the S plane
     
     hls = cv2.cvtColor(src, cv2.COLOR_RGB2HLS)
@@ -447,7 +447,7 @@ unwarp.Minv = cv2.getPerspectiveTransform(polygon2, polygon1)
 # lane finder params: number of slices, width of search region, number of pixels
 find_lines.num, find_lines.width, find_lines.min = 8, 160, 50
 # Sobel and HLS thresholds
-SobelX.thresh, HlsGrad.s_thresh = [30, 80], [155, 255]
+SobelX.thresh, HlsGrad.s_thresh = [30, 80], [90, 255]
 # Yellow and white thresholds
 ColorFilt.yellow, ColorFilt.white = [[215, 255], [160, 255], [0, 160]],[[225, 255], [225, 255], [225, 255]]
 
