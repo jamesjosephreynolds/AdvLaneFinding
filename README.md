@@ -30,7 +30,7 @@ There are two pairs of images demonstrating the camera calibration below.
 It is very clear in the chessboard image, above, that the slightly curved lines have been straightened.  It's not as apparent on the image of the road, but if one examines the left and right edges closely, the undistorted images shows less of the periphery, and the road sign on the right-hand side is a more natural shape.  There are additional images in this repository, saved as output_images/undistorted\*.png showing the rest of the undistort results.
 
 ## Thresholding ##
-For thresholding I combined three techniques: Sobel gradient threshold in the horizontal (x) direction, HLS threshold in the S-plane, and RGB thresholds around yellow and white colors.  Each of the three results is represented by a different color in the composite images below.
+For thresholding I combined three techniques: Sobel gradient threshold in the horizontal (x) direction, HLS threshold in the S-plane, and RGB thresholds around yellow and white colors.  Each of the three results is represented by a different color in the composite images below.  Red pixels are returned from the yellow or white RGB thresholding, green pixels are returned from the Sobel gradient thresholding, and blue pixels are from the HLS thresholding.
 
 ![Whoops, there should be a picture here!](output_images/thresholded_road0.png)
 ![Whoops, there should be a picture here!](output_images/thresholded_road1.png)
