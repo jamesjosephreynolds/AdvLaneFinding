@@ -478,8 +478,8 @@ for fidx in range(len(fname_array)):
     undist = cv2.undistort(src, mtx, dist)
 
     # Save images
-    plt.subplot(2,1,1),plt.imshow(src),plt.title('Original')
-    plt.subplot(2,1,2),plt.imshow(undist),plt.title('Undistorted')
+    plt.subplot(1,2,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(1,2,2),plt.imshow(undist),plt.title('Undistorted')
     filestr = 'output_images/undistorted_road'+str(fidx)+'.png'
     plt.savefig(filestr, format='png')
 
@@ -494,24 +494,24 @@ for fidx in range(len(fname_array)):
     stacked = threshold(undist)
 
     # Save images
-    plt.subplot(2,1,1),plt.imshow(src),plt.title('Original')
-    plt.subplot(2,1,2),plt.imshow(stacked),plt.title('Thresholded')
+    plt.subplot(1,2,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(1,2,2),plt.imshow(stacked),plt.title('Thresholded')
     filestr = 'output_images/thresholded_road'+str(fidx)+'.png'
     plt.savefig(filestr, format='png')
 
 for fidx in range(len(fname_array)):
-        # Load image
-        src = mpimg.imread(fname_array[fidx], format = 'jpg')
+    # Load image
+    src = mpimg.imread(fname_array[fidx], format = 'jpg')
 
-        # Two images (undistorted original, and undistorted painted)
-        undist = cv2.undistort(src, mtx, dist)
-        painted = find_lanes(src)
+    # Two images (undistorted original, and undistorted painted)
+    undist = cv2.undistort(src, mtx, dist)
+    painted = find_lanes(src)
 
-        # Compare undistorted image to fully processed (with lane) image
-        plt.subplot(2,1,1),plt.imshow(undist),plt.title('Undistorted')
-        plt.subplot(2,1,2),plt.imshow(painted),plt.title('Output')
-        filestr = 'output_images/final'+str(fidx)+'.png'
-        plt.savefig(filestr, format='png')
+    # Compare undistorted image to fully processed (with lane) image
+    plt.subplot(1,2,1),plt.imshow(undist),plt.title('Undistorted')
+    plt.subplot(1,2,2),plt.imshow(painted),plt.title('Output')
+    filestr = 'output_images/final'+str(fidx)+'.png'
+    plt.savefig(filestr, format='png')
 
 ## Test videos
 '''find_lanes.composite = True
