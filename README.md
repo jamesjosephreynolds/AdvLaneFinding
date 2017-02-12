@@ -24,3 +24,4 @@ Even with this search, I was unable to get calibration points out of file 4.  By
 
 I selected 4 images from the calibration to test the calibration data, by performing a `cv2.undistort` and comparing the before and after images side-by-side.  The first image pair is the easiest to judge by the naked eye, and say the image has been reasonably corrected.
 
+[undistorted_chessboard0.png](output_images/undistorted_chessboard0.png)
