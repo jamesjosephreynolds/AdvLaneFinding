@@ -451,9 +451,38 @@ SobelX.thresh, HlsGrad.s_thresh = [30, 80], [155, 255]
 # Yellow and white thresholds
 ColorFilt.yellow, ColorFilt.white = [[215, 255], [160, 255], [0, 160]],[[225, 255], [225, 255], [225, 255]]
 
-## Choose test images
+## Show camera calibration test images
+for fidx in range(len(fname_array)):
+    print('Saving camera calibration chessboard samples')
+    # Load image
+    src = mpimg.imread(fname_array[fidx], format = 'jpg')
+
+    # Two images (original, and undistorted)
+    undist = cv2.undistort(src, mtx, dist)
+
+    # Save images
+    plt.subplot(2,1,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(2,1,2),plt.imshow(undist),plt.title('Undistorted')
+    filestr = 'output_images/undistorted_chessboard'+str(fidx)+'.png'
+    plt.savefig(filestr, format='png')
+
 fname_array = test_images()
-'''
+
+## Show camera calibration test images
+for fidx in range(len(fname_array)):
+    print('Saving camera calibration road samples')
+    # Load image
+    src = mpimg.imread(fname_array[fidx], format = 'jpg')
+
+    # Two images (original, and undistorted)
+    undist = cv2.undistort(src, mtx, dist)
+
+    # Save images
+    plt.subplot(2,1,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(2,1,2),plt.imshow(undist),plt.title('Undistorted')
+    filestr = 'output_images/undistorted_road'+str(fidx)+'.png'
+    plt.savefig(filestr, format='png')
+
 for fidx in range(len(fname_array)):
         # Load image
         src = mpimg.imread(fname_array[fidx], format = 'jpg')
@@ -466,11 +495,10 @@ for fidx in range(len(fname_array)):
         plt.subplot(2,1,1),plt.imshow(undist),plt.title('Undistorted')
         plt.subplot(2,1,2),plt.imshow(painted),plt.title('Output')
         filestr = 'output_images/input_output'+str(fidx)+'.png'
-        plt.savefig(filestr, format='png')'''
-
+        plt.savefig(filestr, format='png')
 
 ## Test videos
-find_lanes.composite = True
+'''find_lanes.composite = True
 print('Starting video 1')
 video_output = 'project_video_out.mp4'
 clip1 = VideoFileClip("project_video.mp4")
@@ -485,4 +513,4 @@ video_clip.write_videofile(video_output, audio=False)
 video_output = 'harder_challenge_video_out.mp4'
 clip1 = VideoFileClip("harder_challenge_video.mp4")
 video_clip = clip1.fl_image(find_lanes)
-video_clip.write_videofile(video_output, audio=False)
+video_clip.write_videofile(video_output, audio=False)'''
