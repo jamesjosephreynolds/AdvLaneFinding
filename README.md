@@ -4,7 +4,7 @@
 
 All python source code is in [advanced_lane_finding.py](advanced_lane_finding.py).
 
-All output images reference herein or otherwise are in [/output_images](output_images).
+All output images reference herein or otherwise are in [/output_images](output_images).  There are images showing chessboard undistort results, road image undistort results, road image thresholding, road image warping and lane finding, and final image.
 
 The source video and result are [project_video.mp4](project_video.mp4) and [project_video_out.mp4](project_video_out.mp4), respectively.
 
