@@ -209,4 +209,14 @@ The image below shows and example of both the calculated lane position and the r
 
 ## Result Video ##
 
+My final video can be downloaded from this repository [project_video_out.mp4](project_video_out.mp4) or viewed on YouTube at the link below.
+
 [![Whoops, there should be a picture here!](https://img.youtube.com/vi/DlZwk43E1X4/0.jpg)](https://youtu.be/DlZwk43E1X4)
+
+## Reflections ##
+
+The biggest technical challenge I found in this project was filtering out the point where the left-hand barrier meets the road.  In the first challenge video, my pipeline had a tendency to identify this line, more than the actual lane lines.  I think in order to overcome this, the filtering technique needs to be more sophisticated.  One could also try to shape the warping polygon to omit this area, but that seems less robust to real-world condition.  I tried to implement a scheme whereby any two of my three filtering techniques (Sobel, HLS threshold, RGB threshold) had to agree on a pixel before it could be counted, to increase robustness.  Unfortunately this resulted in too many empty sets.  I still feel this was a good approach, but the pipeline needed a significant improvement to achieve this.
+
+Another idea that I considered is to assign a "confidence" level to the line location.  In this way, if there is no doubt about the location of the right line, then one could search for the left line in some fixed area, a known distance away from this line, or vice versa.  In addition, the low-pass filtering could be adaptive, based on the confidence level.  If confidence is very high, the low-pass filer could tend toward the newer result, and tend toward historical results otherwise.
+
+Overall I found this to be the most challenging of the four projects so far, but also the most interesting.  The CNN projects are also interesting, but since a CNN operates as a sort of black box, one does not get as intimate with the underlying functionality, and understand how the information really flows.
