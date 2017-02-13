@@ -6,7 +6,7 @@ All python source code is in [advanced_lane_finding.py](advanced_lane_finding.py
 
 All output images reference herein or otherwise are in [/output_images](output_images).
 
-The source video and result are [project_video.mp4](project_video.mp4) and [project_video.mp4](project_video.mp4), respectively.
+The source video and result are [project_video.mp4](project_video.mp4) and [project_video_out.mp4](project_video_out.mp4), respectively.
 
 ## Camera Calibration ##
 Camera calibration is a straightforward application of lessons in this course.  There was one additional method that I applied to properly calibrate the camera with the provided calibration images.  Namely, I found that not all of the images had the same number of corners, i.e. some of the chessboards were cropped.  So, I implemented a search function, as a set of nested `if` statements, in order to find the correct number of corners for each images.  A sample of that code is shown below.
