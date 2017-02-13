@@ -94,6 +94,75 @@ All of the test images are in the [output_images](output_images) folder, I show 
 
 ## Perspective Warping ##
 
-For perspective transformation, I assumed that a constant, x-symmetric trapezoid, mapped into a rectangle, would be my mapping.  I used one of the test images that I judged, by eye, to have very straight lines, and iteratively moved the vertices of the trapezoid, until the resulting warped image showed straight lines.  This image is shown below.
+For perspective transformation, I assumed that a constant, x-symmetric trapezoid, mapped into a rectangle, would be my mapping.  I used one of the test images that I judged, by eye, to have very straight lines, and iteratively moved the vertices of the trapezoid, until the resulting warped image showed straight lines.  
+
+The vertices that I eventually settled on are shown in function `warp_and_unwarp_params()`.  `poly1` represents the trapezoid, and `poly2` represents the rectangle into which it is mapped.  `poly2` is simply the corners of the image.
+
+```python
+def warp_and_unwarp_params():
+    # Constant parameters for warp and unwarp
+
+    cols = np.float32(1280)
+    rows = np.float32(720)
+    horz = np.float32(450) # horizon y-coordinate
+    center = np.float32(cols/2) # horizontal center x-coordinate
+    tr_width = np.float32(200) # width of the trapezoid upper leg
+    s = np.float32(0.3) # slope of the trapezoid right leg (dy/dx)
+    
+    p1 = [center-tr_width/2, horz] # upper left vertex
+    p4 = [center+tr_width/2, horz] # upper right vertex
+    p2 = [p1[0]-(rows-horz)/s, rows] # lower left vertex
+    p3 = [p4[0]+(rows-horz)/s, rows] # lower right vertex
+
+    # warp polygon
+    poly1 = np.float32([p1,p2,p3,p4])
+
+    # result polygon (image border)
+    poly2 = np.float32([[0,0],[0,rows],[cols,rows],[cols,0]])
+
+    return poly1, poly2
+```
+
+The image I used to select my polygon is shown below.
 
 ![Whoops, there should be a picture here!](output_images/warped_road0.png)
+
+## Fitting and Measurements##
+
+For fitting, I used method very similar to that in the lessons.  First I created a histogram of the binary image column-wise, for the bottom half of the image:
+```python
+# Sum up along the vertical direction, find a starting point to search
+    hist = np.sum(src[mid_height:,:], axis=0)
+```
+For the initial search, I let the left and right lanes start anywhere in the left-half and righ-half of the image, respectively.  For subsequent images, I only allowed the search to take place within a neighborhood of the last frame.  This prevented the lane lines from jumping toward barriers that show up even after filtering is completed.  I used attribute `center` of `class Line` to do this:
+```python
+if LaneLines.center == []:
+        left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
+        right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
+    else:
+        window_left = LaneLines.center[0]-np.uint32(find_lines.width/2)
+        window_right = LaneLines.center[0]+np.uint32(find_lines.width/2)
+        left_center = window_left+np.argmax(hist[window_left:window_right])
+        window_left = LaneLines.center[1]-np.uint32(find_lines.width/2)
+        window_right = LaneLines.center[1]+np.uint32(find_lines.width/2)
+        right_center = window_left+np.argmax(hist[window_left:window_right])
+    LaneLines.center = [np.uint32(left_center), np.uint32(right_center)]
+```
+I divided the image up into eight horizontal bands, and allowed the search window to move from band-to-band.  For the initial fit, I used the same `np.polyfit` approach as in the lessons.  To remove noise (jitter), in the next fits, I used a standard low-pass filter on the resulting points.  I used attributes `bestx` and `best_fit` and method `draw_lines` for this.  For the low-pass filter I used a 20% contribution from the current fit, and an 80% contribution from previous fits.  This cleaned up the final trouble spot, near the end of the video, when the road changes colors briefly.
+```python
+def draw_lines(self, rows):
+        # draw lines using polyfit and EWMA on previous fits
+        ploty = np.linspace(0, rows-1, num=rows)
+        if self.bestx == []:
+            self.bestx = np.zeros((2,rows), dtype = np.float32)
+            self.bestx[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
+            self.bestx[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
+        else:
+            tmp = np.zeros((2,rows), dtype = np.float32)
+            tmp[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
+            tmp[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
+            self.bestx[0] = 0.2*tmp[0] + 0.8*self.bestx[0]
+            self.bestx[1] = 0.2*tmp[1] + 0.8*self.bestx[1]
+```
+The image below demonstrates where the barrier is showing up in the warped image, but the lane lines are correctly identified.
+![Whoops, there should be a picture here!](output_images/found_lines2.png)
