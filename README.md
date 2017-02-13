@@ -3,9 +3,10 @@
 ## Files ##
 
 All python source code is in [advanced_lane_finding.py](advanced_lane_finding.py).
+All output images reference herein or otherwise are in [/output_images](output_images).
 
 ## Camera Calibration ##
-Camera calibration is a straightforward application of lessons in this course.  There was one additional method that I applied to properly calibrate the camera with the provided calibration images.  Namely, I found that not all of the images had the same number of corners, i.e. some of the chessboards were cropped.  So, I implemented a search function, as a set of nested `if` statements, in order to find the correct number of corners for each images.  A sample of that code, from [calibrate_camera.py](calibrate_camera.py), is shown below.
+Camera calibration is a straightforward application of lessons in this course.  There was one additional method that I applied to properly calibrate the camera with the provided calibration images.  Namely, I found that not all of the images had the same number of corners, i.e. some of the chessboards were cropped.  So, I implemented a search function, as a set of nested `if` statements, in order to find the correct number of corners for each images.  A sample of that code is shown below.
 
 ```python
 # 9x6 corners
@@ -92,7 +93,7 @@ def ColorFilt(src):
     return color_binary
 ```
 
-All of the test images are in the [output_images](output_images) folder, I show the one below that I find the most interesting.  There are contributions from each of the three filtering methods apparent.
+All of the test images are in the [/output_images](output_images) folder, I show the one below that I find the most interesting.  There are contributions from each of the three filtering methods apparent.
 
 ![Whoops, there should be a picture here!](output_images/thresholded_road5.png)
 
