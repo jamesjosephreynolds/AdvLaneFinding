@@ -4,7 +4,7 @@
 
 All python source code is in [advanced_lane_finding.py](advanced_lane_finding.py).
 
-All output images reference herein or otherwise are in [/output_images](output_images).  There are images showing chessboard undistort results, road image undistort results, road image thresholding, road image warping and lane finding, and final image.
+All output images reference herein or otherwise are in [/output_images](output_images).  There are images showing chessboard undistort results, road image undistort results, road image thresholding, road image warping, lane finding box overlay, and final image.
 
 The source video and result are [project_video.mp4](project_video.mp4) and [project_video_out.mp4](project_video_out.mp4), respectively.
 
@@ -33,6 +33,7 @@ Even with this search, I was unable to get calibration points out of file 4.  By
 There are two pairs of images demonstrating the camera calibration below.
 
 ![Whoops, there should be a picture here!](output_images/undistorted_chessboard0.png)
+
 ![Whoops, there should be a picture here!](output_images/undistorted_road0.png)
 
 It is very clear in the chessboard image, above, that the slightly curved lines have been straightened.  It's not as apparent on the image of the road, but if one examines the left and right edges closely, the undistorted images shows less of the periphery, and the road sign on the right-hand side is a more natural shape.  There are additional images in this repository, saved as output_images/undistorted\*.png showing the rest of the undistort results.
@@ -138,11 +139,14 @@ The image I used to select my polygon is shown below.
 ## Fitting and Measurements##
 
 For fitting, I used method very similar to that in the lessons.  First I created a histogram of the binary image column-wise, for the bottom half of the image:
+
 ```python
 # Sum up along the vertical direction, find a starting point to search
 hist = np.sum(src[mid_height:,:], axis=0)
 ```
+
 For the initial search, I let the left and right lanes start anywhere in the left-half and righ-half of the image, respectively.  For subsequent images, I only allowed the search to take place within a neighborhood of the last frame.  This prevented the lane lines from jumping toward barriers that show up even after filtering is completed.  I used attribute `center` of `class Line` to do this:
+
 ```python
 if LaneLines.center == []:
     left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
@@ -156,7 +160,9 @@ else:
     right_center = window_left+np.argmax(hist[window_left:window_right])
 LaneLines.center = [np.uint32(left_center), np.uint32(right_center)]
 ```
+
 I divided the image up into eight horizontal bands, and allowed the search window to move from band-to-band.  For the initial fit, I used the same `np.polyfit` approach as in the lessons.  To remove noise (jitter), in the next fits, I used a standard low-pass filter on the resulting points.  I used attributes `bestx` and `best_fit` and method `draw_lines` for this.  For the low-pass filter I used a 20% contribution from the current fit, and an 80% contribution from previous fits.  This cleaned up the final trouble spot, near the end of the video, when the road changes colors briefly.
+
 ```python
 def draw_lines(self, rows):
     # draw lines using polyfit and EWMA on previous fits
