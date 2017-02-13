@@ -1,5 +1,9 @@
 # Project 4 - Advanced Lane Finding #
 
+## Files ##
+
+All python source code is in [advanced_lane_finding.py](advanced_lane_finding.py).
+
 ## Camera Calibration ##
 Camera calibration is a straightforward application of lessons in this course.  There was one additional method that I applied to properly calibrate the camera with the provided calibration images.  Namely, I found that not all of the images had the same number of corners, i.e. some of the chessboards were cropped.  So, I implemented a search function, as a set of nested `if` statements, in order to find the correct number of corners for each images.  A sample of that code, from [calibrate_camera.py](calibrate_camera.py), is shown below.
 
