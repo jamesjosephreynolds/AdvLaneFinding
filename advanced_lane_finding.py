@@ -11,30 +11,87 @@ from moviepy.editor import VideoFileClip
 import time
 
 class Line():
+    # 0th index will correspond to the left line
+    # 1st index will correspond to the right line
     def __init__(self):
+        ym_per_pix = 30/720 # meters per pixel in y dimension
+        xm_per_pix = 3.7/700 # meters per pixel in x dimension
         # was the line detected in the last iteration?
         self.detected = False  
         # x values of the last n fits of the line
         self.recent_xfitted = [] 
         #average x values of the fitted line over the last n iterations
-        self.bestx = None     
+        self.bestx = []     
         #polynomial coefficients averaged over the last n iterations
-        self.best_fit = None  
+        self.best_fit = np.array([[0,0,0],[0,0,0]], dtype='float')
         #polynomial coefficients for the most recent fit
         self.current_fit = [np.array([False])]  
         #radius of curvature of the line in some units
-        self.radius_of_curvature = None 
+        self.radii = [] 
         #distance in meters of vehicle center from the line
         self.line_base_pos = None 
         #difference in fit coefficients between last and new fits
-        self.diffs = np.array([0,0,0], dtype='float') 
+        self.diffs = np.array([[0,0,0],[0,0,0]], dtype='float') 
         #x values for detected line pixels
         self.allx = None  
         #y values for detected line pixels
         self.ally = None
         #x location of the first window center form the previous run
         self.center = []
+        # conversion of pixels to length
+        self.pixels_to_length = []
 
+    def reset(self):
+        # comments in __init__()
+        self.detected = False  
+        self.recent_xfitted = [] 
+        self.bestx = []    
+        self.best_fit = np.array([[0,0,0],[0,0,0]], dtype='float')
+        self.current_fit = [np.array([False])]  
+        self.radii = [] 
+        self.line_base_pos = None 
+        self.diffs = np.array([[0,0,0],[0,0,0]], dtype='float') 
+        self.allx = None  
+        self.ally = None
+        self.center = []
+        self.pixels_to_length = []
+
+    def width_pixels(self):
+        #lane width in pixels
+        return (self.center[1] - self.center[0])
+
+    def position(self, cols):
+        # negative values indicate bias to right line
+        # positive values indicate bias to left line
+        pos_pixel = (self.center[1]-cols/2)-(cols/2-self.center[0])
+        pos_meter = pos_pixel * 3.7 / self.width_pixels()
+        return pos_meter
+
+    def draw_lines(self, rows):
+        # draw lines using polyfit and EWMA on previous fits
+        ploty = np.linspace(0, rows-1, num=rows)
+        if self.bestx == []:
+            self.bestx = np.zeros((2,rows), dtype = np.float32)
+            self.bestx[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
+            self.bestx[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
+        else:
+            tmp = np.zeros((2,rows), dtype = np.float32)
+            tmp[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
+            tmp[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
+            self.bestx[0] = 0.2*tmp[0] + 0.8*self.bestx[0]
+            self.bestx[1] = 0.2*tmp[1] + 0.8*self.bestx[1]
+
+        self.radii = np.zeros((2,), dtype = np.float32)
+
+        ym_per_pix = 30/720
+        xm_per_pix = 3.7/700
+        y_eval = np.max(ploty)
+        left_fit_cr = np.polyfit(ploty*ym_per_pix, self.bestx[0]*xm_per_pix, 2)
+        right_fit_cr = np.polyfit(ploty*ym_per_pix, self.bestx[1]*xm_per_pix, 2)
+        # Calculate the new radii of curvature
+        self.radii[0] = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
+        self.radii[1] = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
+            
 def cal_images():
     # Images for camera calibration
     fname_array = ['camera_cal/calibration1.jpg',
@@ -175,18 +232,17 @@ def calibrate_camera(fname_array):
 
     return mtx, dist
 
-def paint_lane(src, left_polynomial, right_polynomial):
+def paint_lane(src):
     # Given an image and a polynomial best fit for each edge
     # superimpose the lane over the image
-
+    rows = src.shape[0]
     dst = np.zeros_like(src).astype(np.uint8)
-    ploty = np.linspace(0, 719, num=720)
-    left_fit = left_polynomial[0]*ploty**2 + left_polynomial[1]*ploty + left_polynomial[2]
-    right_fit = right_polynomial[0]*ploty**2 + right_polynomial[1]*ploty + right_polynomial[2]
+    LaneLines.draw_lines(rows)
+    ploty = np.linspace(0, rows-1, num=rows)
 
     # Recast the x and y points into usable format for cv2.fillPoly()
-    pts_left = np.array([np.transpose(np.vstack([left_fit, ploty]))])
-    pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fit, ploty])))])
+    pts_left = np.array([np.transpose(np.vstack([LaneLines.bestx[0], ploty]))])
+    pts_right = np.array([np.flipud(np.transpose(np.vstack([LaneLines.bestx[1], ploty])))])
     pts = np.hstack((pts_left, pts_right))
 
     # Draw the lane onto the warped blank image
@@ -294,6 +350,7 @@ def find_lines(src):
     # lines in each slice
 
     src = cv2.cvtColor(src, cv2.COLOR_RGB2GRAY)
+    
 
     rows, cols = src.shape[0], src.shape[1]
 
@@ -311,22 +368,17 @@ def find_lines(src):
 
     left_indices_all = []
     right_indices_all = []
-    if LeftLine.center == []:
+    if LaneLines.center == []:
         left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
-    else:
-        window_left = LeftLine.center-np.uint32(find_lines.width/2)
-        window_right = LeftLine.center+np.uint32(find_lines.width/2)
-        left_center = window_left+np.argmax(hist[window_left:window_right])
-    LeftLine.center = np.uint32(left_center)
-
-    if RightLine.center == []:
         right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
     else:
-        window_left = RightLine.center-np.uint32(find_lines.width/2)
-        window_right = RightLine.center+np.uint32(find_lines.width/2)
+        window_left = LaneLines.center[0]-np.uint32(find_lines.width/2)
+        window_right = LaneLines.center[0]+np.uint32(find_lines.width/2)
+        left_center = window_left+np.argmax(hist[window_left:window_right])
+        window_left = LaneLines.center[1]-np.uint32(find_lines.width/2)
+        window_right = LaneLines.center[1]+np.uint32(find_lines.width/2)
         right_center = window_left+np.argmax(hist[window_left:window_right])
-    RightLine.center = np.uint32(right_center)
-    
+    LaneLines.center = [np.uint32(left_center), np.uint32(right_center)]
     
     dst = np.dstack((src, src, src))*255
 
@@ -375,13 +427,13 @@ def find_lines(src):
     left_indices_all = np.concatenate(left_indices_all)
     right_indices_all = np.concatenate(right_indices_all)
 
-    left_poly = np.polyfit(nonzero_row[left_indices_all],nonzero_col[left_indices_all],2)
-    right_poly = np.polyfit(nonzero_row[right_indices_all],nonzero_col[right_indices_all],2)
+    LaneLines.best_fit[0] = np.polyfit(nonzero_row[left_indices_all],nonzero_col[left_indices_all],2)
+    LaneLines.best_fit[1] = np.polyfit(nonzero_row[right_indices_all],nonzero_col[right_indices_all],2)
 
     dst[nonzero_row[left_indices_all], nonzero_col[left_indices_all]] = [255, 0, 0]
     dst[nonzero_row[right_indices_all], nonzero_col[right_indices_all]] = [0, 0, 255]
 
-    return dst, left_poly, right_poly
+    return dst
 
 def composite_image(img1, img2, img3, img4):
     # show 4 images on the same plot for tuning analysis
@@ -391,6 +443,24 @@ def composite_image(img1, img2, img3, img4):
     dst[360:721,0:640] = cv2.resize(img3, (640,360))
     dst[360:721,640:1281] = cv2.resize(img4, (640,360))
 
+    return dst
+
+def annotate(img):
+    # annotate image with line information
+    rows, cols = img.shape[0], img.shape[1]
+    pos = LaneLines.position(cols)
+    lrad = LaneLines.radii[0] #left lane radius
+    rrad = LaneLines.radii[1] #right lane radius
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    dst = img
+    if pos > 0:
+        cv2.putText(dst,'Position = {:1.2}m left'.format(pos), (np.int(cols/2)-100,50), font, 1,(255,255,255),2)
+    else:
+        cv2.putText(dst,'Position = {:1.2}m right'.format(-pos), (np.int(cols/2)-100,50), font, 1,(255,255,255),2)
+
+    cv2.putText(dst,'Left curve radius = {:.0f}m'.format(lrad), (np.int(cols/2)-100,100), font, 1,(255,255,255),2)
+    cv2.putText(dst,'Right curve radius = {:.0f}m'.format(rrad), (np.int(cols/2)-100,150), font, 1,(255,255,255),2)
+    
     return dst
 
 def find_lanes(image):
@@ -407,16 +477,17 @@ def find_lanes(image):
     image = warp(stack)
 
     # Find the lane lines (Note: need to implement previous result improvement and filtering!)
-    lanes, left_polynomial, right_polynomial = find_lines(image)
+    lanes = find_lines(image)
 
     # Paint the lane lines onto the blank bird's eye image
-    shadow = paint_lane(lanes, left_polynomial, right_polynomial)
+    shadow = paint_lane(lanes)
 
     # Warp the bird's eye lane to original image perspective using inverse perspective matrix (Minv)
     unwarped = unwarp(shadow)
 
     # Overlay the lane estimate onto the original image
     dst = cv2.addWeighted(undist, 1, unwarped, 0.3, 0)
+    annotated = annotate(dst)
 
     if find_lanes.composite is True:
         # combine images
@@ -436,8 +507,7 @@ find_lanes.mtx = mtx
 find_lanes.dist = dist
 
 ## Create global variables
-LeftLine = Line()
-RightLine = Line()
+LaneLines = Line()
 
 ## Load parameters ##
 polygon1, polygon2 = warp_and_unwarp_params()
@@ -447,9 +517,9 @@ unwarp.Minv = cv2.getPerspectiveTransform(polygon2, polygon1)
 # lane finder params: number of slices, width of search region, number of pixels
 find_lines.num, find_lines.width, find_lines.min = 8, 160, 50
 # Sobel and HLS thresholds
-SobelX.thresh, HlsGrad.s_thresh = [30, 80], [90, 255]
+SobelX.thresh, HlsGrad.s_thresh = [20, 100], [120, 225]
 # Yellow and white thresholds
-ColorFilt.yellow, ColorFilt.white = [[215, 255], [160, 255], [0, 160]],[[225, 255], [225, 255], [225, 255]]
+ColorFilt.yellow, ColorFilt.white = [[215, 255], [140, 255], [0, 160]],[[225, 255], [225, 255], [225, 255]]
 
 ## Show camera calibration test images
 for fidx in range(len(fname_array)):
@@ -487,6 +557,7 @@ for fidx in range(len(fname_array)):
 for fidx in range(len(fname_array)):
     print('Saving thresholded road samples')
     # Load image
+    LaneLines.reset()
     src = mpimg.imread(fname_array[fidx], format = 'jpg')
 
     # Two images (original, and undistorted)
@@ -499,8 +570,47 @@ for fidx in range(len(fname_array)):
     filestr = 'output_images/thresholded_road'+str(fidx)+'.png'
     plt.savefig(filestr, format='png')
 
+## Show warped test images
+for fidx in range(len(fname_array)):
+    print('Saving warped road samples')
+    # Load image
+    LaneLines.reset()
+    src = mpimg.imread(fname_array[fidx], format = 'jpg')
+
+    # Two images (original, and undistorted)
+    undist = cv2.undistort(src, mtx, dist)
+    stacked = threshold(undist)
+    warped = warp(stacked)
+
+    # Save images
+    plt.subplot(1,2,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(1,2,2),plt.imshow(warped),plt.title('Warped')
+    filestr = 'output_images/warped_road'+str(fidx)+'.png'
+    plt.savefig(filestr, format='png')
+
+## Show found lines on warped images
+for fidx in range(len(fname_array)):
+    print('Saving found line samples')
+    # Load image
+    LaneLines.reset()
+    src = mpimg.imread(fname_array[fidx], format = 'jpg')
+
+    # Two images (original, and undistorted)
+    undist = cv2.undistort(src, mtx, dist)
+    stacked = threshold(undist)
+    warped = warp(stacked)
+    lines = find_lines(warped)
+
+    # Save images
+    plt.subplot(1,2,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(1,2,2),plt.imshow(lines),plt.title('Found')
+    filestr = 'output_images/found_lines'+str(fidx)+'.png'
+    plt.savefig(filestr, format='png')
+
+find_lanes.composite = False
 for fidx in range(len(fname_array)):
     # Load image
+    LaneLines.reset()
     src = mpimg.imread(fname_array[fidx], format = 'jpg')
 
     # Two images (undistorted original, and undistorted painted)
@@ -514,18 +624,21 @@ for fidx in range(len(fname_array)):
     plt.savefig(filestr, format='png')
 
 ## Test videos
-'''find_lanes.composite = True
+find_lanes.composite = False
 print('Starting video 1')
+LaneLines.reset()
 video_output = 'project_video_out.mp4'
 clip1 = VideoFileClip("project_video.mp4")
 video_clip = clip1.fl_image(find_lanes)
 video_clip.write_videofile(video_output, audio=False)
-
+'''
+LaneLines.reset()
 video_output = 'challenge_video_out.mp4'
 clip1 = VideoFileClip("challenge_video.mp4")
 video_clip = clip1.fl_image(find_lanes)
 video_clip.write_videofile(video_output, audio=False)
 
+LaneLines.reset()
 video_output = 'harder_challenge_video_out.mp4'
 clip1 = VideoFileClip("harder_challenge_video.mp4")
 video_clip = clip1.fl_image(find_lanes)
