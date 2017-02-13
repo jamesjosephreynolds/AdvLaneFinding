@@ -86,8 +86,9 @@ def ColorFilt(src):
                  &((src[:,:,2] > ColorFilt.white[2][0]) & (src[:,:,2] < ColorFilt.white[2][1])))] = 1
 
     return color_binary
-    ```
-    All of the test images are in the [output_images](output_images) folder, I show the one below that I find the most interesting.  There are contributions from each of the three filtering methods apparent.
+```
+
+All of the test images are in the [output_images](output_images) folder, I show the one below that I find the most interesting.  There are contributions from each of the three filtering methods apparent.
 
 ![Whoops, there should be a picture here!](output_images/thresholded_road5.png)
 
