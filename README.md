@@ -140,37 +140,71 @@ The image I used to select my polygon is shown below.
 For fitting, I used method very similar to that in the lessons.  First I created a histogram of the binary image column-wise, for the bottom half of the image:
 ```python
 # Sum up along the vertical direction, find a starting point to search
-    hist = np.sum(src[mid_height:,:], axis=0)
+hist = np.sum(src[mid_height:,:], axis=0)
 ```
 For the initial search, I let the left and right lanes start anywhere in the left-half and righ-half of the image, respectively.  For subsequent images, I only allowed the search to take place within a neighborhood of the last frame.  This prevented the lane lines from jumping toward barriers that show up even after filtering is completed.  I used attribute `center` of `class Line` to do this:
 ```python
 if LaneLines.center == []:
-        left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
-        right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
-    else:
-        window_left = LaneLines.center[0]-np.uint32(find_lines.width/2)
-        window_right = LaneLines.center[0]+np.uint32(find_lines.width/2)
-        left_center = window_left+np.argmax(hist[window_left:window_right])
-        window_left = LaneLines.center[1]-np.uint32(find_lines.width/2)
-        window_right = LaneLines.center[1]+np.uint32(find_lines.width/2)
-        right_center = window_left+np.argmax(hist[window_left:window_right])
-    LaneLines.center = [np.uint32(left_center), np.uint32(right_center)]
+    left_center = np.argmax(hist[:slice_width]) # horizontal center of the left search rectangle
+    right_center = slice_width+np.argmax(hist[slice_width:]) # horizontal center of the right search rectangle
+else:
+    window_left = LaneLines.center[0]-np.uint32(find_lines.width/2)
+    window_right = LaneLines.center[0]+np.uint32(find_lines.width/2)
+    left_center = window_left+np.argmax(hist[window_left:window_right])
+    window_left = LaneLines.center[1]-np.uint32(find_lines.width/2)
+    window_right = LaneLines.center[1]+np.uint32(find_lines.width/2)
+    right_center = window_left+np.argmax(hist[window_left:window_right])
+LaneLines.center = [np.uint32(left_center), np.uint32(right_center)]
 ```
 I divided the image up into eight horizontal bands, and allowed the search window to move from band-to-band.  For the initial fit, I used the same `np.polyfit` approach as in the lessons.  To remove noise (jitter), in the next fits, I used a standard low-pass filter on the resulting points.  I used attributes `bestx` and `best_fit` and method `draw_lines` for this.  For the low-pass filter I used a 20% contribution from the current fit, and an 80% contribution from previous fits.  This cleaned up the final trouble spot, near the end of the video, when the road changes colors briefly.
 ```python
 def draw_lines(self, rows):
-        # draw lines using polyfit and EWMA on previous fits
-        ploty = np.linspace(0, rows-1, num=rows)
-        if self.bestx == []:
-            self.bestx = np.zeros((2,rows), dtype = np.float32)
-            self.bestx[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
-            self.bestx[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
-        else:
-            tmp = np.zeros((2,rows), dtype = np.float32)
-            tmp[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
-            tmp[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
-            self.bestx[0] = 0.2*tmp[0] + 0.8*self.bestx[0]
-            self.bestx[1] = 0.2*tmp[1] + 0.8*self.bestx[1]
+    # draw lines using polyfit and EWMA on previous fits
+    ploty = np.linspace(0, rows-1, num=rows)
+    if self.bestx == []:
+        self.bestx = np.zeros((2,rows), dtype = np.float32)
+        self.bestx[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
+        self.bestx[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
+    else:
+        tmp = np.zeros((2,rows), dtype = np.float32)
+        tmp[0] = self.best_fit[0,0]*ploty**2 + self.best_fit[0,1]*ploty + self.best_fit[0,2]
+        tmp[1] = self.best_fit[1,0]*ploty**2 + self.best_fit[1,1]*ploty + self.best_fit[1,2]
+        self.bestx[0] = 0.2*tmp[0] + 0.8*self.bestx[0]
+        self.bestx[1] = 0.2*tmp[1] + 0.8*self.bestx[1]
 ```
+
 The image below demonstrates where the barrier is showing up in the warped image, but the lane lines are correctly identified.
+
 ![Whoops, there should be a picture here!](output_images/found_lines2.png)
+
+In order to measure the car's position within the lane, I calculated the distance from the center of the image to the left line, and the distance from the center of the image to the right line.  The difference between these two, converted from pixels to meters, gives the relative position within the lane.  A value of 0 means the car is centered.  During the video, the car seems to be slightly in the left half of the lane for most of the time, although it sometimes will cross over to the right side.  The method `position` does this calculation:
+
+```python
+def position(self, cols):
+    # negative values indicate bias to right line
+    # positive values indicate bias to left line
+    pos_pixel = (self.center[1]-cols/2)-(cols/2-self.center[0])
+    pos_meter = pos_pixel * 3.7 / self.width_pixels()
+    return pos_meter
+```
+
+For calculating the radius of each line, I used the code provided in the lesson, substituting my own variables.  During the video, when the road is actually curving, the radii seems to be in 100m to 1000m range, so based on the guidance, this is reasonable.  When the lanes are straight, the calculated radii can get quite large.  This is to be expected, as the radius is undefined for a straight line.  Ideally, there should be a resulting value above which the radius is ignored.  The attribute `radii` is where this information is stored.  Additionally, it uses the low-pass filtered result for x and y points, so the radii themselves are also low-pass filtered.
+
+```python
+self.radii = np.zeros((2,), dtype = np.float32)
+
+    ym_per_pix = 30/720
+    xm_per_pix = 3.7/700
+    y_eval = np.max(ploty)
+    left_fit_cr = np.polyfit(ploty*ym_per_pix, self.bestx[0]*xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty*ym_per_pix, self.bestx[1]*xm_per_pix, 2)
+    # Calculate the new radii of curvature
+    self.radii[0] = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
+    self.radii[1] = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
+```
+
+The image below shows and example of both the calculated lane position and the radius of the lane lines (0.98m left of center, 838m for the left line, 586m for the right line.
+
+![Whoops, there should be a picture here!](output_images/final4.png)
+
+
