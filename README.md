@@ -32,11 +32,5 @@ It is very clear in the chessboard image, above, that the slightly curved lines 
 ## Thresholding ##
 For thresholding I combined three techniques: Sobel gradient threshold in the horizontal (x) direction, HLS threshold in the S-plane, and RGB thresholds around yellow and white colors.  Each of the three results is represented by a different color in the composite images below.  Red pixels are returned from the yellow or white RGB thresholding, green pixels are returned from the Sobel gradient thresholding, and blue pixels are from the HLS thresholding.
 
-![Whoops, there should be a picture here!](output_images/thresholded_road0.png)
-![Whoops, there should be a picture here!](output_images/thresholded_road1.png)
-![Whoops, there should be a picture here!](output_images/thresholded_road2.png)
-![Whoops, there should be a picture here!](output_images/thresholded_road3.png)
-![Whoops, there should be a picture here!](output_images/thresholded_road4.png)
 ![Whoops, there should be a picture here!](output_images/thresholded_road5.png)
-![Whoops, there should be a picture here!](output_images/thresholded_road6.png)
-![Whoops, there should be a picture here!](output_images/thresholded_road7.png)
+
