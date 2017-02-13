@@ -209,4 +209,4 @@ The image below shows and example of both the calculated lane position and the r
 
 ## Result Video ##
 
-[![Whoops, there should be a picture here!]((https://img.youtube.com/vi/DlZwk43E1X4/0.jpg))](https://youtu.be/DlZwk43E1X4)
+[![Whoops, there should be a picture here!](https://img.youtube.com/vi/DlZwk43E1X4/0.jpg)](https://youtu.be/DlZwk43E1X4)
