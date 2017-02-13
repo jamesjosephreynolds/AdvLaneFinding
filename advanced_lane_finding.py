@@ -531,8 +531,8 @@ for fidx in range(len(fname_array)):
     undist = cv2.undistort(src, mtx, dist)
 
     # Save images
-    plt.subplot(2,1,1),plt.imshow(src),plt.title('Original')
-    plt.subplot(2,1,2),plt.imshow(undist),plt.title('Undistorted')
+    plt.subplot(1,2,1),plt.imshow(src),plt.title('Original')
+    plt.subplot(1,2,2),plt.imshow(undist),plt.title('Undistorted')
     filestr = 'output_images/undistorted_chessboard'+str(fidx)+'.png'
     plt.savefig(filestr, format='png')
 
