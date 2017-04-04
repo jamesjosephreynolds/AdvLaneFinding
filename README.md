@@ -136,7 +136,7 @@ The image I used to select my polygon is shown below.
 
 ![Whoops, there should be a picture here!](output_images/warped_road0.png)
 
-## Fitting and Measurements##
+## Fitting and Measurements ##
 
 For fitting, I used method very similar to that in the lessons.  First I created a histogram of the binary image column-wise, for the bottom half of the image:
 
